@@ -16,7 +16,7 @@ namespace MuteKumoOnline.Plugins
         [HarmonyPrefix]
         public static bool OnlineRoomSoundController_PlayJoinLobbyRandomVoice_Prefix()
         {
-            Logger.Log("OnlineRoomSoundController_PlayJoinLobbyRandomVoice_Prefix");
+            //Logger.Log("OnlineRoomSoundController_PlayJoinLobbyRandomVoice_Prefix");
 
             return false;
         }
