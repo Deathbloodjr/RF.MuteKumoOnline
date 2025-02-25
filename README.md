@@ -1,46 +1,13 @@
-# RF.ModTemplate
- A Rhythm Festival mod template for developing new mods.
+# RF.MuteKumoOnline
+ A Rhythm Festival mod to mute Kumo when searching for an online match.
  
- <a href="taikomodmanager:insertGithubLinkhereAndReplaceWithUrlShortener"> <img src="Resources/InstallButton.png" alt="One-click Install using the Taiko Mod Manager" width="256"/> </a>
+ <a href="https://shorturl.at/dvQeT"> <img src="Resources/InstallButton.png" alt="One-click Install using the Taiko Mod Manager" width="256"/> </a>
  
 # Requirements
  Visual Studio 2022 or newer\
  Taiko no Tatsujin: Rhythm Festival
  
  
-# How to use
- On github, click the "Use this template" button -> Create a new repository\
- (Optional) Check "Include all branches", which is just a "main" and "dev" branch\
- Give a Repository name\
- Select Private or Public repository\
- Clone the repo locally
-
- Change a few instances of "ModTemplate" to whatever you will name your mod <ModName>\
- That would be:
- - The main directory of this
- - ModTemplate.sln
-    - Also open the .sln file in a text editor to change "ModTemplate", "ModTemplate\ModTemplate.csproj", replacing ModTemplate with <ModName>
- - ModTemplate folder
- - Within that folder, ModTemplate.csproj
- 
- Now open the solution itself\
- In the .csproj file (double click the <ModName> project in solution explorer)
- - Change ModName to your ModName
- - Change the description to whatever your mod does (Or remember to do this later)
- - Change ModVersion to a fitting version in the format of x.x.x (or whatever your preference is)
-
- In Plugin.cs
- - Change the namespace to what you selected as RootNamespace earlier
-    - In Visual Studio, you can highlight the namespace, hit Ctrl + R, Ctrl + R, and enter your new namespace to change all instances of it. 
-    - You can change the namespaces in the 2 example patches as well, to RootNamespace.Patches
- - Change public const string ModName = your ModName
- 
- Outside of code, edit the README.md file
- - Change RF.ModTemplate to your mod's name
- - Change the description.
- - Change the "href="taikomodmanager:insertGithubLinkhereAndReplaceWithUrlShortener" to a shortened url in the format of "taikomodmanager:https://github.com/<you\>/\<yourmodrepo\>", allowing the use of the One Click Mod Install button.
- - Delete this "#How to use" section
- - Make any other changes you feel like making
  
 
 # Build

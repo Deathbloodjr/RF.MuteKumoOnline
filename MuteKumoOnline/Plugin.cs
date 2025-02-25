@@ -4,16 +4,17 @@ using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
 using BepInEx.Configuration;
-using ModTemplate.Plugins;
+using MuteKumoOnline.Plugins;
 using UnityEngine;
 using System.Collections;
+using SaveProfileManager.Plugins;
 
-namespace ModTemplate
+namespace MuteKumoOnline
 {
     [BepInPlugin(MyPluginInfo.PLUGIN_GUID, ModName, MyPluginInfo.PLUGIN_VERSION)]
     public class Plugin : BasePlugin
     {
-        public const string ModName = "ModTemplate";
+        public const string ModName = "MuteKumoOnline";
 
         public static Plugin Instance;
         private Harmony _harmony = null;
@@ -21,9 +22,6 @@ namespace ModTemplate
 
 
         public ConfigEntry<bool> ConfigEnabled;
-        //public ConfigEntry<string> ConfigSongTitleLanguageOverride;
-        //public ConfigEntry<float> ConfigFlipInterval;
-
 
 
         public override void Load()
@@ -34,6 +32,16 @@ namespace ModTemplate
 
             SetupConfig();
             SetupHarmony();
+
+            // The try catch has to be here, rather than inside the AddToSaveManager function, for some reason
+            try
+            {
+                AddToSaveManager();
+            }
+            catch
+            {
+
+            }
         }
 
         private void SetupConfig()
@@ -44,16 +52,6 @@ namespace ModTemplate
                 "Enabled",
                 true,
                 "Enables the mod.");
-
-            //ConfigSongTitleLanguageOverride = Config.Bind("General",
-            //    "SongTitleLanguageOverride",
-            //    "JP",
-            //    "Sets the song title to the selected language. (JP, EN, FR, IT, DE, ES, TW, CN, KO)");
-
-            //ConfigFlipInterval = Config.Bind("General",
-            //    "FlipInterval",
-            //    3f,
-            //    "How quickly the difficulty flips between oni and ura.");
         }
 
         private void SetupHarmony()
@@ -61,13 +59,16 @@ namespace ModTemplate
             // Patch methods
             _harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
 
-            if (ConfigEnabled.Value)
+            LoadPlugin();
+        }
+
+        public static void LoadPlugin()
+        {
+            if (Instance.ConfigEnabled.Value)
             {
                 bool result = true;
                 // If any PatchFile fails, result will become false
-                //result &= PatchFile(typeof(SwapJpEngTitlesPatch));
-                //result &= PatchFile(typeof(AdjustUraFlipTimePatch));
-                //SwapJpEngTitlesPatch.SetOverrideLanguages();
+                result &= Instance.PatchFile(typeof(MuteKumoOnlinePatch));
                 if (result)
                 {
                     Log.LogInfo($"Plugin {MyPluginInfo.PLUGIN_NAME} is loaded!");
@@ -76,8 +77,7 @@ namespace ModTemplate
                 {
                     Log.LogError($"Plugin {MyPluginInfo.PLUGIN_GUID} failed to load.");
                     // Unload this instance of Harmony
-                    // I hope this works the way I think it does
-                    _harmony.UnpatchSelf();
+                    Instance._harmony.UnpatchSelf();
                 }
             }
             else
@@ -107,6 +107,23 @@ namespace ModTemplate
                 return false;
             }
         }
+
+        public static void UnloadPlugin()
+        {
+            Instance._harmony.UnpatchSelf();
+            Log.LogInfo($"Plugin {MyPluginInfo.PLUGIN_NAME} has been unpatched.");
+        }
+
+        public void AddToSaveManager()
+        {
+            PluginSaveDataInterface plugin = new PluginSaveDataInterface(MyPluginInfo.PLUGIN_GUID);
+            plugin.AssignLoadFunction(LoadPlugin);
+            plugin.AssignUnloadFunction(UnloadPlugin);
+            //plugin.AssignReloadSaveFunction(ReloadPlugin);
+            plugin.AddToManager();
+            //Logger.Log("Plugin added to SaveDataManager");
+        }
+
 
         public static MonoBehaviour GetMonoBehaviour() => TaikoSingletonMonoBehaviour<CommonObjects>.Instance;
         public Coroutine StartCoroutine(IEnumerator enumerator)
