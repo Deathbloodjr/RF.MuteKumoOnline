@@ -8,6 +8,7 @@ using MuteKumoOnline.Plugins;
 using UnityEngine;
 using System.Collections;
 using SaveProfileManager.Plugins;
+using System.Reflection;
 
 namespace MuteKumoOnline
 {
@@ -30,28 +31,27 @@ namespace MuteKumoOnline
 
             Log = base.Log;
 
-            SetupConfig();
+            SetupConfig(Config, Path.Combine("BepInEx", "data", ModName));
             SetupHarmony();
 
-            // The try catch has to be here, rather than inside the AddToSaveManager function, for some reason
-            try
+            var isSaveManagerLoaded = IsSaveManagerLoaded();
+            if (isSaveManagerLoaded)
             {
                 AddToSaveManager();
             }
-            catch
-            {
-
-            }
         }
 
-        private void SetupConfig()
+        private void SetupConfig(ConfigFile config, string saveFolder, bool isSaveManager = false)
         {
             var dataFolder = Path.Combine("BepInEx", "data", ModName);
 
-            ConfigEnabled = Config.Bind("General",
-                "Enabled",
-                true,
-                "Enables the mod.");
+            if (!isSaveManager)
+            {
+                ConfigEnabled = config.Bind("General",
+                   "Enabled",
+                   true,
+                   "Enables the mod.");
+            }
         }
 
         private void SetupHarmony()
@@ -59,10 +59,10 @@ namespace MuteKumoOnline
             // Patch methods
             _harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
 
-            LoadPlugin();
+            LoadPlugin(ConfigEnabled.Value);
         }
 
-        public static void LoadPlugin()
+        public static void LoadPlugin(bool enabled)
         {
             if (Instance.ConfigEnabled.Value)
             {
@@ -71,18 +71,19 @@ namespace MuteKumoOnline
                 result &= Instance.PatchFile(typeof(MuteKumoOnlinePatch));
                 if (result)
                 {
-                    Log.LogInfo($"Plugin {MyPluginInfo.PLUGIN_NAME} is loaded!");
+                    Logger.Log($"Plugin {MyPluginInfo.PLUGIN_NAME} is loaded!");
                 }
                 else
                 {
-                    Log.LogError($"Plugin {MyPluginInfo.PLUGIN_GUID} failed to load.");
+                    Logger.Log($"Plugin {MyPluginInfo.PLUGIN_GUID} failed to load.", LogType.Error);
                     // Unload this instance of Harmony
+                    // I hope this works the way I think it does
                     Instance._harmony.UnpatchSelf();
                 }
             }
             else
             {
-                Log.LogInfo($"Plugin {MyPluginInfo.PLUGIN_NAME} is disabled.");
+                Logger.Log($"Plugin {MyPluginInfo.PLUGIN_NAME} is disabled.");
             }
         }
 
@@ -96,14 +97,14 @@ namespace MuteKumoOnline
             {
                 _harmony.PatchAll(type);
 #if DEBUG
-                Log.LogInfo("File patched: " + type.FullName);
+                Logger.Log("File patched: " + type.FullName);
 #endif
                 return true;
             }
             catch (Exception e)
             {
-                Log.LogInfo("Failed to patch file: " + type.FullName);
-                Log.LogInfo(e.Message);
+                Logger.Log("Failed to patch file: " + type.FullName);
+                Logger.Log(e.Message);
                 return false;
             }
         }
@@ -111,17 +112,41 @@ namespace MuteKumoOnline
         public static void UnloadPlugin()
         {
             Instance._harmony.UnpatchSelf();
-            Log.LogInfo($"Plugin {MyPluginInfo.PLUGIN_NAME} has been unpatched.");
+            Logger.Log($"Plugin {MyPluginInfo.PLUGIN_NAME} has been unpatched.");
+        }
+
+        public static void ReloadPlugin()
+        {
+            // Reloading will always be completely different per mod
+            // You'll want to reload any config file or save data that may be specific per profile
+            // If there's nothing to reload, don't put anything here, and keep it commented in AddToSaveManager
+            //SwapSongLanguagesPatch.InitializeOverrideLanguages();
+            //TaikoSingletonMonoBehaviour<CommonObjects>.Instance.MyDataManager.MusicData.Reload();
         }
 
         public void AddToSaveManager()
         {
-            PluginSaveDataInterface plugin = new PluginSaveDataInterface(MyPluginInfo.PLUGIN_GUID);
+            // Add SaveDataManager dll path to your csproj.user file
+            // https://github.com/Deathbloodjr/RF.SaveProfileManager
+            var plugin = new PluginSaveDataInterface(MyPluginInfo.PLUGIN_GUID);
             plugin.AssignLoadFunction(LoadPlugin);
             plugin.AssignUnloadFunction(UnloadPlugin);
             //plugin.AssignReloadSaveFunction(ReloadPlugin);
+            plugin.AssignConfigSetupFunction(SetupConfig);
             plugin.AddToManager();
-            //Logger.Log("Plugin added to SaveDataManager");
+        }
+
+        private bool IsSaveManagerLoaded()
+        {
+            try
+            {
+                Assembly loadedAssembly = Assembly.Load("com.DB.RF.SaveProfileManager");
+                return loadedAssembly != null;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
 
